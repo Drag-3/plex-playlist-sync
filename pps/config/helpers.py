@@ -104,9 +104,6 @@ class UserInputs:
 
     sync_users: list[SyncUser]
 
-    deezer_user_id: str
-    deezer_playlist_ids: str
-
 
 def retry_with_backoff(func):
     """Decorator function to retry the decorated function with exponential backoff."""

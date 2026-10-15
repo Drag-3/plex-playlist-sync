@@ -1,7 +1,8 @@
 spotipy
 plexapi
-deezer-python
-flask
+Flask
 gevent
-urllib3
 requests
+urllib3
+fuzzywuzzy
+Unidecode

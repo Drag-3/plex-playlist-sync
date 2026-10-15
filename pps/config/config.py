@@ -19,15 +19,12 @@ SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_USER_ID = os.getenv("SPOTIFY_USER_ID", None)
 SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
-SPOTIFY_DAILY_MIXES = os.getenv("SPOTIFY_DAILY_MIXES").split(",")  # May be defunct
-DEEZER_USER_ID = os.getenv("DEEZER_USER_ID")
-DEEZER_PLAYLIST_ID = os.getenv("DEEZER_PLAYLIST_ID")
+SPOTIFY_DAILY_MIXES = [value.strip() for value in os.getenv("SPOTIFY_DAILY_MIXES", "").split(",") if value.strip()]  # Legacy; per-user playlists are in SYNC_USERS
 SYNC_USERS = os.getenv("SYNC_USERS", "")  # JSON string of list of objs [{plex_username, spotify_username}]
                                             # This can later be expanded to include other services
 
 
 logging.getLogger(__name__)
-logging.critical(SYNC_USERS)
 def get_environment_variables():
     user_inputs = UserInputs(
         plex_url=PLEX_URL,
@@ -46,8 +43,6 @@ def get_environment_variables():
         spotify_user_id=SPOTIFY_USER_ID,
         spotify_redirect_uri=SPOTIFY_REDIRECT_URI,
         spotify_daily_mixes=SPOTIFY_DAILY_MIXES,
-        deezer_user_id=DEEZER_USER_ID,
-        deezer_playlist_ids=DEEZER_PLAYLIST_ID,
         sync_users=convertSyncUserJsonToSyncUserObj(loads(SYNC_USERS)),
     )
     return user_inputs

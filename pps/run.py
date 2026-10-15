@@ -3,32 +3,24 @@ import os
 import threading
 import time
 
-import plexapi
-
 from pps.config import config
 
 from pps.providers.plex import connect_to_plex
 
 from pps.providers.spotify import connect_to_spotify, spotify_playlist_sync, all_users_authenticated
-from pps.providers.p_deezer import connect_to_deezer, deezer_playlist_sync
 from pps.config.logging_utils import setup_logging
 
 from pps import CACHE_DIR, CSV_DIR
 from pps.providers import spotify_callback
 
 
-def sync_playlists(plex, sp, dz, user_inputs, user):
+def sync_playlists(plex, sp, user_inputs, user):
+    """Run Spotify synchronization for one Plex/Spotify user mapping."""
     if sp:
         spotify_playlist_sync(sp, plex, user_inputs, user)
         logging.info("Spotify playlist sync complete")
     else:
-        logging.info("Could not Sync Spotify playlists. Probably not authenticated")
-
-    if dz:
-        deezer_playlist_sync(dz, plex, user_inputs)
-        logging.info("Deezer playlist sync complete")
-    else:
-        logging.info("could not sync Deezer_playlists")
+        logging.info("Could not sync Spotify playlists. Probably not authenticated")
 
 
 def run():
@@ -77,17 +69,7 @@ def run():
                 logging.info(f"Switched to user {user.plex_username}. {pl}")
             sp = connect_to_spotify(user_inputs, user.spotify_info.username)
             # Continue for any other
-            sync_playlists(pl, sp, None, user_inputs, user)
-
-        # Connect to Spotify
-
-        # Connect to Deezer
-        """
-        dz = connect_to_deezer(user_inputs)
-
-        # Sync playlists
-        sync_playlists(plex, sp, dz, user_inputs)
-        """
+            sync_playlists(pl, sp, user_inputs, user)
 
         logging.info("All playlist(s) sync complete")
         logging.info(f"Sleeping for {user_inputs.wait_seconds} seconds"

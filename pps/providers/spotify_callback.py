@@ -57,7 +57,7 @@ We will also have the option to reset the auth for a user, which will remove the
 Back on the main thread, if the user is not authenticated, we cannot execute the sync, so we will need to wait for the user to authenticate
 We will skip the user if they are not authenticated and try the next user
  /callback should return a tuple of (username, code) so we can map the code to the correct user ! 
- 
+
 The main thread will check if at least one user is authenticated, if not, it will wait for a user to authenticate
 If a user is authenticated, it will continue with the sync if the user is not authenticated, connect will return None and we will skip the user else it will return the user object
 
@@ -66,6 +66,7 @@ Sync is normal.
 The only problem is that a user that authenticates will have to wait for the next run of the sync to actually process the authentication. It may expire before then.
 
 So perhaps keep a separate auth thread which will save the credentials to a file, and the main thread will read the file and use the credentials to connect to the service.
+Make sure to avoid the race conditions though.
 
 So this is the current plan:
 1. Start the callback server
@@ -97,8 +98,6 @@ if __name__ == '__main__':
         append_instead_of_sync=False,
         spotify_user_id="",
         spotify_daily_mixes=[],
-        deezer_user_id="",
-        deezer_playlist_ids="",
         plex_token="",
         spotify_client_id="",
         spotify_client_secret="",
