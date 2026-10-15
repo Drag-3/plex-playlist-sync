@@ -57,3 +57,36 @@ def setup_logging():
 
     # Add both handlers to the logger
     logger.addHandler(console_handler)
+
+
+class SpecialFormatter(ColoredFormatter):
+    def __init__(self, prefix="", suffix="", *args, **kwargs):
+        self.prefix = prefix
+        self.suffix = suffix
+        # Adjust the format string to include prefix and suffix around the message
+        kwargs['fmt'] = f"%(asctime)s - %(levelname)s - {prefix}%(message)s{suffix}"
+        super().__init__(*args, **kwargs)
+
+
+def get_prefix_logger(name, level=logging.INFO, prefix="", suffix=""):
+    # Create a logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # Ensure it doesn't propagate to the root logger
+    logger.propagate = False
+
+    # Create a console handler
+    ch = ColorHandler()
+
+    # Create a special formatter and set it on the handler
+    formatter = SpecialFormatter(prefix=prefix, suffix=suffix,
+                                 fmt="%(asctime)s - %(levelname)s - %(message)s",
+                                 datefmt="%Y-%m-%d %H:%M:%S")
+    ch.setFormatter(formatter)
+
+    # Add the handler to the logger
+    if not logger.hasHandlers():
+        logger.addHandler(ch)
+
+    return logger

@@ -3,24 +3,26 @@ import os
 import threading
 import time
 
+import plexapi
+
 from pps.config import config
 
 from pps.providers.plex import connect_to_plex
 
-from pps.providers.spotify import connect_to_spotify, spotify_playlist_sync
+from pps.providers.spotify import connect_to_spotify, spotify_playlist_sync, all_users_authenticated
 from pps.providers.p_deezer import connect_to_deezer, deezer_playlist_sync
 from pps.config.logging_utils import setup_logging
 
-from pps import CACHE_DIR
+from pps import CACHE_DIR, CSV_DIR
 from pps.providers import spotify_callback
 
 
-def sync_playlists(plex, sp, dz, user_inputs):
+def sync_playlists(plex, sp, dz, user_inputs, user):
     if sp:
-        spotify_playlist_sync(sp, plex, user_inputs)
+        spotify_playlist_sync(sp, plex, user_inputs, user)
         logging.info("Spotify playlist sync complete")
     else:
-        logging.info("Could not Sync Spotify playlists")
+        logging.info("Could not Sync Spotify playlists. Probably not authenticated")
 
     if dz:
         deezer_playlist_sync(dz, plex, user_inputs)
@@ -39,9 +41,16 @@ def run():
 
     # Create cache directory
     os.makedirs(CACHE_DIR, exist_ok=True)
+    os.chown(CACHE_DIR, os.getuid(), os.getgid())
+    os.chmod(CACHE_DIR, 0o777)
+
+    # Create CSV directory
+    os.makedirs(CSV_DIR, exist_ok=True)
+    os.chown(CSV_DIR, os.getuid(), os.getgid())
+    os.chmod(CSV_DIR, 0o777)
 
     # Start flask callback server
-    app_thread = threading.Thread(target=spotify_callback.start_callback_server)
+    app_thread = threading.Thread(target=spotify_callback.start_callback_server, args=(user_inputs,))
     app_thread.start()
 
     # Body Loop
@@ -49,16 +58,36 @@ def run():
         logging.info("Starting playlist sync")
 
         # Connect to Plex
-        plex = connect_to_plex(user_inputs)
+        plex = connect_to_plex(user_inputs)  # Get primary Plex server
+        """
+        This script is designed to sync only one server at a time. If you have multiple servers, you can run multiple
+        instances of this script with different compose files.
+        All users should be shared or home users on the current sync server.
+        """
+
+        while not all_users_authenticated(user_inputs):  # Wait for all users to authenticate
+            time.sleep(10)
+            logging.info("Waiting for all users to authenticate... (10s)")
+
+        for user in user_inputs.sync_users:
+            if user.plex_username == "master":
+                pl = plex  # Get primary Plex server
+            else:
+                pl = plex.switchUser(user.plex_username)  # Get connected user's Plex server obj
+                logging.info(f"Switched to user {user.plex_username}. {pl}")
+            sp = connect_to_spotify(user_inputs, user.spotify_info.username)
+            # Continue for any other
+            sync_playlists(pl, sp, None, user_inputs, user)
 
         # Connect to Spotify
-        sp = connect_to_spotify(user_inputs)
 
         # Connect to Deezer
+        """
         dz = connect_to_deezer(user_inputs)
 
         # Sync playlists
         sync_playlists(plex, sp, dz, user_inputs)
+        """
 
         logging.info("All playlist(s) sync complete")
         logging.info(f"Sleeping for {user_inputs.wait_seconds} seconds"
